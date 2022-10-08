@@ -1,6 +1,6 @@
 import "react-native-gesture-handler";
-import 'intl'
-import 'intl/locale-data/jsonp/pt-BR'
+import "intl";
+import "intl/locale-data/jsonp/pt-BR";
 
 import React, { useCallback, useEffect, useState } from "react";
 import { ThemeProvider } from "styled-components";
@@ -14,9 +14,11 @@ import {
 } from "@expo-google-fonts/poppins";
 
 import theme from "./src/global/styles/theme";
-import { View } from "react-native";
+import { StatusBar, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { AppRoutes } from "./src/routes/app.routes";
+import { SignIn } from "./src/screens/SignIn";
+import { AuthProvider } from "./src/hooks/auth";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -46,7 +48,10 @@ export default function App() {
     <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
       <ThemeProvider theme={theme}>
         <NavigationContainer>
-          <AppRoutes />
+          <StatusBar barStyle="light-content" />
+          <AuthProvider>
+            <SignIn />
+          </AuthProvider>
         </NavigationContainer>
       </ThemeProvider>
     </View>
