@@ -1,4 +1,10 @@
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as AuthSession from "expo-auth-session";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -21,6 +27,8 @@ interface IAuthContextData {
   user: User;
   signInWithGoogle(): Promise<void>;
   signInWithApple(): Promise<void>;
+  signOut(): Promise<void>
+  userStorageLoading: boolean
 }
 
 interface AuthorizationResponse {
@@ -34,14 +42,17 @@ const AuthContext = createContext({} as IAuthContextData);
 
 function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User>({} as User);
+  const [userStorageLoading, setUserStorageLoading] = useState(true);
+
   const userStorageKey = "@gofinances:user";
 
   async function signInWithGoogle() {
     try {
       const RESPONSE_TYPE = "token";
       const SCOPE = encodeURI("profile email");
-      const CLIENT_ID = '890382958778-35mlded0s8tbobgkqmpqbp17saqcfsgp.apps.googleusercontent.com'
-      const REDIRECT_URI = 'http://auth.expo.io/@gustavokenzo1/gofinances'
+      const CLIENT_ID =
+        "890382958778-35mlded0s8tbobgkqmpqbp17saqcfsgp.apps.googleusercontent.com";
+      const REDIRECT_URI = "http://auth.expo.io/@gustavokenzo1/gofinances";
 
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}&scope=${SCOPE}`;
 
@@ -80,11 +91,14 @@ function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (credential) {
+        const name = credential.fullName.givenName
+        const photo = `https://ui-avatars.com/api/?name=${name}&length=1`
+
         const userLogged = {
           id: credential.user,
           email: credential.email,
-          name: credential.fullName.givenName,
-          photo: undefined,
+          name,
+          photo,
         };
 
         setUser(userLogged);
@@ -95,12 +109,33 @@ function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  async function signOut() {
+    setUser({} as User)
+    await AsyncStorage.removeItem(userStorageKey)
+  }
+
+  useEffect(() => {
+    async function loadUserStorageData() {
+      const storagedUser = await AsyncStorage.getItem(userStorageKey);
+
+      if (storagedUser) {
+        setUser(JSON.parse(storagedUser) as User);
+      }
+
+      setUserStorageLoading(false);
+    }
+
+    loadUserStorageData();
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
         user,
         signInWithGoogle,
         signInWithApple,
+        signOut,
+        userStorageLoading
       }}
     >
       {children}

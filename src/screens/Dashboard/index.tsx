@@ -8,6 +8,7 @@ import {
   TransactionCardProps,
 } from "../../components/TransactionCard";
 import theme from "../../global/styles/theme";
+import { useAuth } from "../../hooks/auth";
 import {
   Container,
   Header,
@@ -47,18 +48,26 @@ export function Dashboard() {
     {} as HighlightData
   );
 
+  const { signOut, user } = useAuth();
+
   function getLastTransactionDate(
     collection: DataListProps[],
     type: "positive" | "negative"
   ) {
+    const filteredCollection = collection.filter(
+      (transaction: DataListProps) => transaction.type === type
+    );
+
+    if (filteredCollection.length === 0) {
+      return 0;
+    }
+
     const lastTransaction = new Date(
       Math.max.apply(
         Math,
-        collection
-          .filter((transaction: DataListProps) => transaction.type === type)
-          .map((transaction: DataListProps) =>
-            new Date(transaction.date).getTime()
-          )
+        filteredCollection.map((transaction: DataListProps) =>
+          new Date(transaction.date).getTime()
+        )
       )
     ).toLocaleDateString("pt-BR", {
       day: "2-digit",
@@ -69,7 +78,8 @@ export function Dashboard() {
   }
 
   async function loadTransactions() {
-    const dataKey = "@gofinances:transactions";
+    const dataKey = `@gofinances:transactions_user:${user.id}`;
+
     const response = await AsyncStorage.getItem(dataKey);
     const transactions = response ? JSON.parse(response) : [];
 
@@ -114,7 +124,7 @@ export function Dashboard() {
       transactions,
       "negative"
     );
-    const totalInterval = `01 a ${lastTransactionExpenses}`;
+    const totalInterval = lastTransactionExpenses === 0 ? "Não há transações" : `01 a ${lastTransactionExpenses}`;
 
     const total = entriesTotal - expensesTotal;
 
@@ -124,14 +134,14 @@ export function Dashboard() {
           style: "currency",
           currency: "BRL",
         }),
-        lastTransaction: lastTransactionEntries,
+        lastTransaction: lastTransactionEntries === 0 ? "Não há transações" : `Última entrada dia ${lastTransactionEntries}`,
       },
       expenses: {
         amount: expensesTotal.toLocaleString("pt-BR", {
           style: "currency",
           currency: "BRL",
         }),
-        lastTransaction: lastTransactionExpenses,
+        lastTransaction: lastTransactionExpenses === 0 ? "Não há transações": `Última saída dia ${lastTransactionExpenses}`,
       },
       total: {
         amount: total.toLocaleString("pt-BR", {
@@ -148,10 +158,6 @@ export function Dashboard() {
 
   useEffect(() => {
     loadTransactions();
-
-    // (async() => {
-    //   await AsyncStorage.removeItem("@gofinances:transactions")
-    // })()
   }, []);
 
   useFocusEffect(
@@ -171,15 +177,13 @@ export function Dashboard() {
           <Header>
             <UserWrapper>
               <UserInfo>
-                <Photo
-                  source={{ uri: "http://github.com/gustavokenzo1.png" }}
-                />
+                <Photo source={{ uri: user.photo }} />
                 <User>
                   <UserGreetings>Olá, </UserGreetings>
-                  <UserName>Gustavo</UserName>
+                  <UserName>{user.name}</UserName>
                 </User>
               </UserInfo>
-              <Icon name="power" />
+              <Icon name="power" onPress={signOut} />
             </UserWrapper>
           </Header>
 
@@ -188,13 +192,13 @@ export function Dashboard() {
               type="up"
               title="Entradas"
               amount={highlightData.entries.amount}
-              lastTransaction={`Última entrada dia ${highlightData.entries.lastTransaction}`}
+              lastTransaction={highlightData.entries.lastTransaction}
             />
             <HighlightCard
               type="down"
               title="Saídas"
               amount={highlightData.expenses.amount}
-              lastTransaction={`Última saída dia ${highlightData.expenses.lastTransaction}`}
+              lastTransaction={highlightData.expenses.lastTransaction}
             />
             <HighlightCard
               type="total"

@@ -38,8 +38,8 @@ export const UserInfo = styled.View`
 `
 
 export const Photo = styled.Image`
-  width: ${RFValue(48)}px;
-  height: ${RFValue(48)}px;
+  width: ${RFValue(50)}px;
+  height: ${RFValue(50)}px;
 
   border-radius: 10px;
 `

@@ -15,10 +15,8 @@ import {
 
 import theme from "./src/global/styles/theme";
 import { StatusBar, View } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
-import { AppRoutes } from "./src/routes/app.routes";
-import { SignIn } from "./src/screens/SignIn";
-import { AuthProvider } from "./src/hooks/auth";
+import { AuthProvider, useAuth } from "./src/hooks/auth";
+import { Routes } from "./src/routes";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -26,6 +24,8 @@ export default function App() {
     Poppins_500Medium,
     Poppins_700Bold,
   });
+
+  const { userStorageLoading } = useAuth()
 
   useEffect(() => {
     async function prepare() {
@@ -40,19 +40,17 @@ export default function App() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || userStorageLoading) {
     return null;
   }
 
   return (
     <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
       <ThemeProvider theme={theme}>
-        <NavigationContainer>
-          <StatusBar barStyle="light-content" />
-          <AuthProvider>
-            <SignIn />
-          </AuthProvider>
-        </NavigationContainer>
+        <StatusBar barStyle="light-content" />
+        <AuthProvider>
+          <Routes />
+        </AuthProvider>
       </ThemeProvider>
     </View>
   );
